@@ -79,10 +79,11 @@ class Parser:
                                 raise ValueError("the numbers of names must be 2")
                             name1: str = names[0].strip()
                             name2: str = names[1].strip()
+                            max_link_capacity: int = 1
                             for data in meta_part.split():
                                 if data.startswith("max_lint_capacity="):
-                                    max_lint_capacity = data.split("=")[1]
-                                    if max_lint_capacity <= 2:
+                                    max_link_capacity = data.split("=")[1]
+                                    if max_link_capacity <= 2:
                                         raise ValueError("Capacity must be positive")
 
                         except Exception as e:
