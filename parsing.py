@@ -1,41 +1,41 @@
-from models import Zone, Connection, Graph
 
-def _help_to_parse_hub(content: str) -> Zone:
-    try:
-        if '[' in content:
-            main_part, meta_part = content.split('[', 1)
-            meta_part = meta_part.rstrip(']')
-        else:
-            main_part = content
-            meta_part = ""
-            
-        part = main_part.strip().split()
-        name: str = part[0]
-        x: int = int(part[1])
-        y: int = int(part[2])
-        zone_type: str = "normal"
-        color: str = ""
-        max_drones: int = 1
-        for data in meta_part.split():
-            if data.startswith("zone="):
-                zone_type = data.split("=")[1]
-            elif data.startswith("color="):
-                color = data.split("=")[1]
-            elif data.startswith("max_drones="):
-                max_drones = data.split("=")[1]
-            
-        zone = Zone(name=name, x=x, y=y,
-                    zone_type=zone_type,
-                    color=color,
-                    max_drones=max_drones)
-        return Zone
-    except Exception as e:
-        print(f"Warning: {e}")
+from models import Zone, Connection, Graph
+import sys
 
 class Parser:
 
-
-    def parse(filepath: str) -> Graph:
+    def _help_to_parse_hub(self, content: str) -> Zone:
+        try:
+            if '[' in content:
+                main_part, meta_part = content.split('[', 1)
+                meta_part = meta_part.rstrip(']')
+            else:
+                main_part = content
+                meta_part = ""
+                
+            part = main_part.strip().split()
+            name: str = part[0]
+            x: int = int(part[1])
+            y: int = int(part[2])
+            zone_type: str = "normal"
+            color: str = ""
+            max_drones: int = 1
+            for data in meta_part.split():
+                if data.startswith("zone="):
+                    zone_type = data.split("=")[1]
+                elif data.startswith("color="):
+                    color = data.split("=")[1]
+                elif data.startswith("max_drones="):
+                    max_drones = int(data.split("=")[1])
+                
+            zone = Zone(name=name, x=x, y=y,
+                        zone_type=zone_type,
+                        color=color,
+                        max_drones=max_drones)
+            return zone
+        except Exception as e:
+            print(f"Warning: {e}")
+    def parse(self, filepath: str) -> Graph:
         try:
             graph = Graph()
             with open(filepath, 'r') as file:
@@ -55,15 +55,21 @@ class Parser:
 
                     elif line.startswith("start_hub"):
                         content = str(line.removeprefix("start_hub:")).strip()
-                        # zone = self._help_to_parse_hub(content)
+                        zone = self._help_to_parse_hub(content)
+                        graph.add_zone(zone)
+                        graph.start = zone
 
                     elif line.startswith("end_hub"):
                         content = str(line.removeprefix("end_hub:")).strip()
-                        # zone = self._help_to_parse_hub(content)
+                        zone = self._help_to_parse_hub(content)
+                        graph.add_zone(zone)
+                        graph.end = zone
+
 
                     elif line.startswith("hub"):
                         content = str(line.removeprefix("hub:")).strip()
-                        # zone = self._help_to_parse_hub(content)
+                        zone = self._help_to_parse_hub(content)
+                        graph.add_zone(zone)
 
                     elif line.startswith("connection"):
                         try:
@@ -81,20 +87,31 @@ class Parser:
                             name2: str = names[1].strip()
                             max_link_capacity: int = 1
                             for data in meta_part.split():
-                                if data.startswith("max_lint_capacity="):
-                                    max_link_capacity = data.split("=")[1]
+                                if data.startswith("max_link_capacity="):
+                                    max_link_capacity = int(data.split("=")[1])
                                     if max_link_capacity <= 2:
                                         raise ValueError("Capacity must be positive")
-
+                            zone_a = graph.get_zone(name1)
+                            zone_b = graph.get_zone(name2)
+                            connection = Connection(zone_a, zone_b, max_link_capacity)
+                            graph.add_connection(connection)
+                            # print(graph.start.name)
+                            # print(graph.end.name)
+                            # print(len(graph.zones))
+                            # print(len(graph.connections))
                         except Exception as e:
-                            pass
-
-                       
-                    
+                                print(f"error: {e}")
         except Exception as e:
-            pass
+            print(f"Error on line {line_num}: {e}")
+        sys.exit(1)
+        return graph
 
 def main():
     filepath = "map/my_maps.txt"
-    ob = Parser.parse(filepath)
+    parser = Parser()
+    ob = parser.parse(filepath)
+    # print(graph.start.name)
+    # print(graph.end.name)
+    # print(len(graph.zones))
+    # print(len(graph.connections))
 main()
