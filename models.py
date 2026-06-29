@@ -34,10 +34,11 @@ class Graph:
         neighbors: list[Zone] = []
         for con in self.connections:
             if con.zone_a == zone:
-                neighbors.append(con.zone_a)
-            if con.zone_b == zone:
                 neighbors.append(con.zone_b)
+            if con.zone_b == zone:
+                neighbors.append(con.zone_a)
         return neighbors
+        
 
 
     

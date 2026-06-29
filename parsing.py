@@ -103,15 +103,15 @@ class Parser:
                                 print(f"error: {e}")
         except Exception as e:
             print(f"Error on line {line_num}: {e}")
-        sys.exit(1)
+            sys.exit(1)
         return graph
 
-def main():
-    filepath = "map/my_maps.txt"
-    parser = Parser()
-    ob = parser.parse(filepath)
-    # print(graph.start.name)
-    # print(graph.end.name)
-    # print(len(graph.zones))
-    # print(len(graph.connections))
-main()
+# def main():
+#     filepath = "map/my_maps.txt"
+#     parser = Parser()
+#     ob = parser.parse(filepath)
+#     # print(graph.start.name)
+#     # print(graph.end.name)
+#     # print(len(graph.zones))
+#     # print(len(graph.connections))
+# main()
