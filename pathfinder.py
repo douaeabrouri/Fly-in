@@ -30,16 +30,30 @@ class Pathfinder:
             return []
         except Exception as e:
             print(f"Found an error: {e}")
-    def find_all_paths(self):
-        pass
+    def find_all_paths(self) ->list[list]:
+        all_paths: list[list] = []
+        queue = deque([[self.graph.start]])
+        while queue:
+            path = queue.popleft()
+            current = path[-1]
+    
+            if current == self.graph.end:
+                all_paths.append(path)
+                
+            for neighbor in self.graph.get_neighbors(current):
+                # print(f"neighbor: {neighbor.name}")
+                if neighbor.zone_type != "blocked":
+                    queue.append(path + [neighbor])
+        return all_paths
 def main():
     filepath = "map/my_maps.txt"
 
     parser = Parser()
     graph = parser.parse(filepath)
     pathfinder = Pathfinder(graph)
-    path = pathfinder.find_path()
-    for zone in path:
-        print(zone.name)
+    paths = pathfinder.find_all_paths()
+
+    for path in paths:
+        print([zone.name for zone in path])
 
 main()
