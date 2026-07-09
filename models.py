@@ -50,3 +50,4 @@ class Drone:
         self.delivered: bool = False
         self.doing_turns: int = 0
         self.destination_zone: Zone | None = None
+

@@ -34,34 +34,34 @@ class Simulation:
                 continue
             if drone.path_index >= len(drone.path) - 1:
                 continue
+
+            
             if drone.doing_turns > 0:
                 drone.doing_turns -= 1
                 if drone.doing_turns == 0:
                     drone.current_zone = drone.destination_zone
+                    # print(drone.current_zone.name)
                     drone.path_index += 1
                     drone.destination_zone = None
                 continue
             next_zone = drone.path[drone.path_index + 1]
-                
-            if next_zone.zone_type == "restricted":
+        
+            if next_zone.zone_type == "restricted" :
                 drone.destination_zone = next_zone
                 drone.doing_turns = 1
-            else:
-                drone.current_zone = next_zone
-                drone.path_index += 1
-                if drone.current_zone == self.graph.end:
-                    drone.delivered = True
-            # print(
-            #     drone.drone_id,
-            #     drone.path_index,
-            #     drone.current_zone.name,
-            #     drone.doing_turns
-            # )
+                continue
+
+            drone.current_zone = next_zone
+            drone.path_index += 1    
+            
+            # elif next_zone.zone_type != "restricted":
+            #     drone.current_zone = next_zone
+            #     drone.path_index += 1
+            if drone.current_zone == self.graph.end:
+                drone.delivered = True
                     
-            print(f"D_i: {drone.drone_id} - PI: {drone.path_index} - zone name: {drone.current_zone.name} - turns: {drone.doing_turns}")
-            # print(f"PI: {drone.path_index}")
-            # print(f"zone name: {drone.current_zone.name}")
-            # print(f"turns: {drone.doing_turns}")
+            # print(f"D_i: {drone.drone_id} - PI: {drone.path_index} - zone name: {drone.current_zone.name} - turns: {drone.doing_turns}")
+
                     
       
     def all_delivered(self) -> bool:
@@ -70,14 +70,14 @@ class Simulation:
     def run(self) -> None:
         drone_informations: list[str]  = []
         while not self.all_delivered():
-            self.turn += 1
             self.step_to_goal()
+            for drone in self.drones:
+                print(f"D_i: {drone.drone_id} - PI: {drone.path_index} - zone name: {drone.current_zone.name} - turns: {drone.doing_turns}")
+            self.turn += 1
             # for drone in self.drones:
             #     drone_informations.append(f"D{drone.drone_id}-{drone.current_zone.name}")
             if self.turn > 15:
                 break
-        for info in drone_informations:
-            print(info)
 
 
 def main():

@@ -54,8 +54,6 @@ def main():
     pathfinder = Pathfinder(graph)
     paths = pathfinder.find_all_paths()
     
-
-    # for path in paths:
-    #     print([zone.name for zone in path])
-
+    for path in paths:
+        print([zone.name for zone in path])
 main()
