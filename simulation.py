@@ -57,6 +57,7 @@ class Simulation:
             #     drone.current_zone.name,
             #     drone.doing_turns
             # )
+                    
             print(f"D_i: {drone.drone_id} - PI: {drone.path_index} - zone name: {drone.current_zone.name} - turns: {drone.doing_turns}")
             # print(f"PI: {drone.path_index}")
             # print(f"zone name: {drone.current_zone.name}")
