@@ -4,7 +4,7 @@ class Zone:
         self.name = name 
         self.x = x
         self.y = y
-        self.color: color
+        self.color = color
         self.zone_type = zone_type
         self.max_drones = max_drones
         self.inside_zone: int = 0
@@ -49,3 +49,4 @@ class Drone:
         self.current_zone = start
         self.delivered: bool = False
         self.doing_turns: int = 0
+        self.destination_zone: Zone | None = None

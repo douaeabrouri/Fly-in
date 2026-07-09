@@ -34,16 +34,19 @@ class Pathfinder:
         all_paths: list[list] = []
 
         queue = deque([[self.graph.start]])
-        while queue:
-            path = queue.popleft()
-            current = path[-1]
-
-            if current == self.graph.end:
-                all_paths.append(path)
-            for neighbor in self.graph.get_neighbors(current):
-                if neighbor.zone_type != "blocked" and neighbor not in path:
-                    queue.append(path + [neighbor])
-        return all_paths
+        try:
+            while queue:
+                path = queue.popleft()
+                current = path[-1]
+    
+                if current == self.graph.end:
+                    all_paths.append(path)
+                for neighbor in self.graph.get_neighbors(current):
+                    if neighbor.zone_type != "blocked" and neighbor not in path:
+                        queue.append(path + [neighbor])
+            return all_paths
+        except Exception as e:
+            print(e)
 def main():
     filepath = "map/my_maps.txt"
     parser = Parser()
