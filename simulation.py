@@ -17,21 +17,8 @@ class Simulation:
             drone.path = paths[i % len(paths)]
             self.drones.append(drone)
 
-    def can_i(self) -> bool:
-        if self.inside_zone >= self.max_drones:
-            return False
-        return True
-    
-    def leave(self) -> None:
-        self.inside_zone -= 1
-
-    def enter(self) -> None:
-        self.inside_zone += 1
-
     def step_to_goal(self) -> None:
-        for drone in self.drones:
-        
-            
+        for drone in self.drones:    
             if drone.delivered:
                 continue
             if drone.path_index >= len(drone.path) - 1:
@@ -43,7 +30,6 @@ class Simulation:
                     old_zone = drone.current_zone 
                     old_zone.inside_zone -= 1
                     drone.destination_zone.inside_zone += 1
-
                     drone.current_zone = drone.destination_zone
                     drone.path_index += 1
                     drone.destination_zone = None
@@ -81,7 +67,6 @@ class Simulation:
         return all(drone.delivered for drone in self.drones)
 
     def run(self) -> None:
-        drone_informations: list[str]  = []
         while not self.all_delivered():
             self.step_to_goal()
             for drone in self.drones:
