@@ -5,7 +5,7 @@ end_hub: goal 4 0 [color=yellow]
 
 hub: A 1 0 [zone=normal color=red]
 hub: R 2 0 [zone=restricted]
-hub: B 3 0 [zone=normal color=blue]
+hub: B 3 0 [zone=normal color=blue max_drones = 1] 
 
 connection: hub-A
 connection: A-R

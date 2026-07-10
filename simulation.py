@@ -30,30 +30,43 @@ class Simulation:
 
     def step_to_goal(self) -> None:
         for drone in self.drones:
+        
+            
             if drone.delivered:
                 continue
             if drone.path_index >= len(drone.path) - 1:
                 continue
 
-            
             if drone.doing_turns > 0:
                 drone.doing_turns -= 1
                 if drone.doing_turns == 0:
+                    old_zone = drone.current_zone 
+                    old_zone.inside_zone -= 1
+                    drone.destination_zone.inside_zone += 1
+
                     drone.current_zone = drone.destination_zone
-                    # print(drone.current_zone.name)
                     drone.path_index += 1
                     drone.destination_zone = None
                 continue
+
             next_zone = drone.path[drone.path_index + 1]
-        
+
+            if next_zone.inside_zone >= next_zone.max_drones:
+                drone.current_zone.inside_zone -= 1
+                next_zone.inside_zone += 1
+                continue
+
+            # elif next_zone.inside_zone <= next_zone.max_drones:
+            #     next_zone.inside_zone += 1
+            #     continue
             if next_zone.zone_type == "restricted" :
                 drone.destination_zone = next_zone
                 drone.doing_turns = 1
                 continue
 
             drone.current_zone = next_zone
-            drone.path_index += 1    
-            
+            drone.path_index += 1
+            # next_zone.max_drones -= 1
             # elif next_zone.zone_type != "restricted":
             #     drone.current_zone = next_zone
             #     drone.path_index += 1
