@@ -17,7 +17,8 @@ class Simulation:
             drone.path = paths[i % len(paths)]
             self.drones.append(drone)
 
-    def step_to_goal(self) -> None:
+    def step_to_goal(self, movements: list[str]) -> None:
+
         for drone in self.drones:    
             if drone.delivered:
                 continue
@@ -32,35 +33,35 @@ class Simulation:
                     drone.destination_zone.inside_zone += 1
                     drone.current_zone = drone.destination_zone
                     drone.path_index += 1
+                    movements.append(
+                        f"D{drone.drone_id}-{drone.current_zone.name}"
+                    )
                     drone.destination_zone = None
                 continue
 
             next_zone = drone.path[drone.path_index + 1]
+             
+            # print(f"NZ: {next_zone.name} NI: {next_zone.inside_zone} NMD: {next_zone.max_drones}")
 
-            if next_zone.inside_zone >= next_zone.max_drones:
-                drone.current_zone.inside_zone -= 1
-                next_zone.inside_zone += 1
-                continue
+            if next_zone not in (self.graph.start, self.graph.end):
+                if next_zone.inside_zone >= next_zone.max_drones:        
+                   continue
 
-            # elif next_zone.inside_zone <= next_zone.max_drones:
-            #     next_zone.inside_zone += 1
-            #     continue
             if next_zone.zone_type == "restricted" :
                 drone.destination_zone = next_zone
                 drone.doing_turns = 1
                 continue
-
+            old_zone = drone.current_zone
+            old_zone.inside_zone -= 1
+            next_zone.inside_zone += 1
             drone.current_zone = next_zone
             drone.path_index += 1
-            # next_zone.max_drones -= 1
-            # elif next_zone.zone_type != "restricted":
-            #     drone.current_zone = next_zone
-            #     drone.path_index += 1
+            movements.append(
+                f"D{drone.drone_id}-{drone.current_zone.name}"
+            )  
             if drone.current_zone == self.graph.end:
                 drone.delivered = True
                     
-            # print(f"D_i: {drone.drone_id} - PI: {drone.path_index} - zone name: {drone.current_zone.name} - turns: {drone.doing_turns}")
-
                     
       
     def all_delivered(self) -> bool:
@@ -68,12 +69,11 @@ class Simulation:
 
     def run(self) -> None:
         while not self.all_delivered():
-            self.step_to_goal()
-            for drone in self.drones:
-                print(f"D_i: {drone.drone_id} - PI: {drone.path_index} - zone name: {drone.current_zone.name} - turns: {drone.doing_turns}")
+            movements: list[str] = []
+            self.step_to_goal(movements)
+            if movements:
+                print(f"Turn {self.turn} -> {" ".join(movements)}")
             self.turn += 1
-            # for drone in self.drones:
-            #     drone_informations.append(f"D{drone.drone_id}-{drone.current_zone.name}")
             if self.turn > 15:
                 break
 
