@@ -10,32 +10,26 @@ class Simulation:
         self.turn: int = 0
     
     def give_me_all_paths(self) -> None:
-        pathfinder = Pathfinder(self.graph)
-        paths = pathfinder.find_all_paths()
-        for i in range(self.graph.nb_drones):
-            drone = Drone(drone_id = i + 1, start = self.graph.start)
-            self.graph.start.inside_zone = self.graph.nb_drones
-            drone.path = paths[i % len(paths)]
-            self.drones.append(drone)
+        
+        try:
+            pathfinder = Pathfinder(self.graph)
+            paths = pathfinder.find_all_paths()
+            for i in range(self.graph.nb_drones):
+                drone = Drone(drone_id = i + 1, start = self.graph.start)
+                self.graph.start.inside_zone = self.graph.nb_drones
+                drone.path = paths[i % len(paths)]
+                self.drones.append(drone)
+        except Exception as e:
+            print(f"ERROR: {e}")
 
-    def can_i(self) -> bool:
-        if self.inside_zone >= self.max_drones:
-            return False
-        return True
-    
-    def leave(self) -> None:
-        self.inside_zone -= 1
-
-    def enter(self) -> None:
-        self.inside_zone += 1
-
-    def step_to_goal(self) -> None:
+    def step_to_goal(self, movements: list[str]) -> None:
+        
         for drone in self.drones:
-            
             if drone.delivered:
                 continue
             if drone.path_index >= len(drone.path) - 1:
                 continue
+
 
             if drone.doing_turns > 0:
                 drone.doing_turns -= 1
@@ -43,41 +37,54 @@ class Simulation:
                     old_zone = drone.current_zone 
                     old_zone.inside_zone -= 1
                     drone.destination_zone.inside_zone += 1
-
+                    drone.destination_zone.incoming_drones -= 1
                     drone.current_zone = drone.destination_zone
                     drone.path_index += 1
+                    movements.append(
+                        f"D{drone.drone_id}-{drone.current_zone.name}"
+                    )
                     drone.destination_zone = None
                 continue
 
             next_zone = drone.path[drone.path_index + 1]
 
-            if next_zone.inside_zone >= next_zone.max_drones:
-                drone.current_zone.inside_zone -= 1
-                next_zone.inside_zone += 1
-                continue
+            if next_zone not in (self.graph.start, self.graph.end):
+                if (next_zone.inside_zone + next_zone.incoming_drones) >= next_zone.max_drones:        
+                   continue
             if next_zone.zone_type == "restricted" :
-                print("h")
                 drone.destination_zone = next_zone
                 drone.doing_turns = 1
+                next_zone.incoming_drones += 1
                 continue
-
+    
+            old_zone = drone.current_zone
+            old_zone.inside_zone -= 1
+            # next_zone.incoming_drones += 1
+            next_zone.inside_zone += 1
             drone.current_zone = next_zone
             drone.path_index += 1
+
+            movements.append(
+                f"D{drone.drone_id}-{drone.current_zone.name}"
+            )
+
             if drone.current_zone == self.graph.end:
                 drone.delivered = True
                     
-      
+                    
     def all_delivered(self) -> bool:
         return all(drone.delivered for drone in self.drones)
 
     def run(self) -> None:
         while not self.all_delivered():
-            self.step_to_goal()
+            movements = []
+            self.step_to_goal(movements)
+            if movements:
+                move = " ".join(movements)
+                print(f"Turn {self.turn} -> {move}")
             self.turn += 1
-            for drone in self.drones:
-                print(f"D_i: {drone.drone_id} - PI: {drone.path_index} - zone name: {drone.current_zone.name} - turns: {drone.doing_turns}")
-            if self.turn > 15:
-                break
+            # if self.turn > 15:
+            #     break
 
 
 def main():
@@ -85,9 +92,6 @@ def main():
     parser = Parser()
     graph = parser.parse(filepath)
     simulation = Simulation(graph)
-    # simulation.give_me_all_paths()
     simulation.give_me_all_paths()
-    # simulation.all_delivered()
     simulation.run()
-    # simulation.step_to_goal()
 main()

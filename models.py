@@ -8,6 +8,7 @@ class Zone:
         self.zone_type = zone_type
         self.max_drones = max_drones
         self.inside_zone: int = 0
+        self.incoming_drones: int = 0
     
 class Connection:
     def __init__(self, zone_a: Zone, zone_b: Zone, max_link_capacity: int) -> None:

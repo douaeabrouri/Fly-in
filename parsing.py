@@ -17,6 +17,7 @@ class Parser:
             name: str = part[0]
             x: int = int(part[1])
             y: int = int(part[2])
+
             zone_type: str = "normal"
             color: str = ""
             max_drones: int = 1
@@ -102,13 +103,3 @@ class Parser:
             print(f"Error on line {line_num}: {e}")
             sys.exit(1)
         return graph
-
-# def main():
-#     filepath = "map/my_maps.txt"
-#     parser = Parser()
-#     ob = parser.parse(filepath)
-#     # print(graph.start.name)
-#     # print(graph.end.name)
-#     # print(len(graph.zones))
-#     # print(len(graph.connections))
-# main()
