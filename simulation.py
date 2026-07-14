@@ -22,7 +22,7 @@ class Simulation:
         except Exception as e:
             print(f"ERROR: {e}")
 
-    def step_to_goal(self, movements: list[str]) -> None:
+    def step_to_goal(self) -> None:
         
         for drone in self.drones:
             if drone.delivered:
@@ -40,9 +40,9 @@ class Simulation:
                     drone.destination_zone.incoming_drones -= 1
                     drone.current_zone = drone.destination_zone
                     drone.path_index += 1
-                    movements.append(
-                        f"D{drone.drone_id}-{drone.current_zone.name}"
-                    )
+                    # movements.append(
+                    #     f"D{drone.drone_id}-{drone.current_zone.name}"
+                    # )
                     drone.destination_zone = None
                 continue
 
@@ -64,9 +64,9 @@ class Simulation:
             drone.current_zone = next_zone
             drone.path_index += 1
 
-            movements.append(
-                f"D{drone.drone_id}-{drone.current_zone.name}"
-            )
+            # movements.append(
+            #     f"D{drone.drone_id}-{drone.current_zone.name}"
+            # )
 
             if drone.current_zone == self.graph.end:
                 drone.delivered = True
@@ -75,18 +75,19 @@ class Simulation:
     def all_delivered(self) -> bool:
         return all(drone.delivered for drone in self.drones)
 
-    def run(self) -> None:
+    def run(self) -> list:
+
+        self.data: list[dict[int, str]] = []
+        self.data.append({d.drone_id: d.current_zone.name for d in self.drones})
         while not self.all_delivered():
-            movements = []
-            self.step_to_goal(movements)
-            if movements:
-                move = " ".join(movements)
-                print(f"Turn {self.turn} -> {move}")
             self.turn += 1
-            # if self.turn > 15:
-            #     break
-
-
+            self.step_to_goal()
+            self.data.append({d.drone_id: d.current_zone for d in self.drones})
+            # movements = []
+            # if movements:
+            #     move = " ".join(movements)
+            #     print(f"Turn {self.turn} -> {move}")
+            # return movements
 def main():
     filepath = "map/my_maps.txt"
     parser = Parser()
