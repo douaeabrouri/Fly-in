@@ -82,17 +82,17 @@ class Simulation:
         while not self.all_delivered():
             self.turn += 1
             self.step_to_goal()
-            self.data.append({d.drone_id: d.current_zone for d in self.drones})
+            self.data.append({d.drone_id: d.current_zone.name for d in self.drones})
             # movements = []
             # if movements:
             #     move = " ".join(movements)
             #     print(f"Turn {self.turn} -> {move}")
             # return movements
-def main():
-    filepath = "map/my_maps.txt"
-    parser = Parser()
-    graph = parser.parse(filepath)
-    simulation = Simulation(graph)
-    simulation.give_me_all_paths()
-    simulation.run()
-main()
+# def main():
+#     filepath = "map/my_maps.txt"
+#     parser = Parser()
+#     graph = parser.parse(filepath)
+#     simulation = Simulation(graph)
+#     simulation.give_me_all_paths()
+#     simulation.run()
+# main()
