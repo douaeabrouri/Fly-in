@@ -1,15 +1,22 @@
-nb_drones: 12
+nb_drones: 3
 
 
-start_hub: hub 0 0 [color=green]
-end_hub: goal 2 0 [color=yellow]
+start_hub: hub 0 0 [color=yellow]
+end_hub: goal 6 0 [color=yellow]
 
-hub: R1 1 0 [zone=restricted color=red max_drones=2]
-hub: R2 2 0 [zone=restricted max_drones=1]
-hub: R3 3 0 [zone=restricted max_drones=1]
+hub: A 1 0 [zone=priority color=red max_drones=2]
+hub: C 2 0 [zone=normal max_drones=2]
+hub: D 3 0 [zone=normal max_drones=1]
+hub: E 4 0 [zone=restricted max_drones=1]
+hub: F 5 0[zone=normal max_drones=1]
 
 
-connection: hub-R1
-connection: R1-R2
-connection: R2-R3
-connection: R3-goal
+
+connection: hub-A
+connection: A-C
+connection: C-D
+connection: D-goal
+
+connection: hub-E
+connection: E-F
+connection: F-goal

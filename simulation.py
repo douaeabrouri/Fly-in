@@ -88,6 +88,7 @@ class Simulation:
             #     move = " ".join(movements)
             #     print(f"Turn {self.turn} -> {move}")
             # return movements
+            return self.data
 # def main():
 #     filepath = "map/my_maps.txt"
 #     parser = Parser()
