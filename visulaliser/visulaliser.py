@@ -29,7 +29,7 @@ class visualisation():
         clock = pygame.time.Clock()
         # self.test_front = pygame.font.Font('front/Pixel_Game.otf', 40)
 
-        self.image = pygame.image.load('visulaliser/alien/fly.jpg')
+        self.image = pygame.image.load('visulaliser/alien/fly.jpeg')
         # text_surface = test_front.render("Fly-In", False, 'White')
         self.alien_surface = pygame.image.load('visulaliser/alien/alien.png')
         self.alien_surface = pygame.transform.scale(self.alien_surface, (90,90))
@@ -172,7 +172,8 @@ def main():
     graph = parser.parse(filepath)
     simulation = Simulation(graph)
     simulation.give_me_all_paths()
-    vis = visualisation(simulation.graph, simulation.data)
+    data = simulation.run()
+    vis = visualisation(simulation.graph, data)
     vis._draw_zones()
     # vis._draw_connections()
     vis._draw_drones() 
