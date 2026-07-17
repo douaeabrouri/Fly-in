@@ -14,11 +14,15 @@ class Simulation:
         try:
             pathfinder = Pathfinder(self.graph)
             paths = pathfinder.find_all_paths()
+            path_usage = [0] * len(paths)
             for i in range(self.graph.nb_drones):
                 drone = Drone(drone_id = i + 1, start = self.graph.start)
-                self.graph.start.inside_zone = self.graph.nb_drones
-                drone.path = paths[i % len(paths)]
+                best_idx = min(range(len(paths)), key=lambda idx: path_usage[idx])
+
+                drone.path = paths[best_idx]
+                path_usage[best_idx] += 1
                 self.drones.append(drone)
+            self.graph.start.inside_zone = self.graph.nb_drones
         except Exception as e:
             print(f"ERROR: {e}")
 
@@ -77,23 +81,30 @@ class Simulation:
 
     def run(self) -> list:
 
-        self.data: list[dict[int, str]] = []
-        self.data.append({d.drone_id: d.current_zone.name for d in self.drones})
+        self.data = []
+        self.data.append(
+            {d.drone_id: d.current_zone.name for d in self.drones}
+        )
+
         while not self.all_delivered():
             self.turn += 1
             self.step_to_goal()
-            self.data.append({d.drone_id: d.current_zone.name for d in self.drones})
+            self.data.append(
+                {d.drone_id: d.current_zone.name for d in self.drones}
+            )
             # movements = []
             # if movements:
             #     move = " ".join(movements)
             #     print(f"Turn {self.turn} -> {move}")
             # return movements
-            return self.data
-# def main():
-#     filepath = "map/my_maps.txt"
-#     parser = Parser()
-#     graph = parser.parse(filepath)
-#     simulation = Simulation(graph)
-#     simulation.give_me_all_paths()
-#     simulation.run()
-# main()
+        return self.data
+def main():
+    filepath = "map/my_maps.txt"
+    parser = Parser()
+    graph = parser.parse(filepath)
+    simulation = Simulation(graph)
+    simulation.give_me_all_paths()
+    data = simulation.run()
+    for turn, frame in enumerate(data):
+        print(f"turn {turn}: {frame}")
+main()
