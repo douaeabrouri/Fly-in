@@ -52,6 +52,7 @@ class visualisation():
             {"start": (1000, 800), "end": (1300, 400)},
             {"start": (-90, 200), "end": (100, 800)},
         ]
+
         self.turn_index = 0
         self.positions = self.zones_positions()
         self.current_alien = 0
@@ -59,6 +60,7 @@ class visualisation():
         self.pause = False
         self.pause_start = 0
         self.stations = {}
+        self.create_all_stations()
 
         while True:
             for event in pygame.event.get():
@@ -70,6 +72,7 @@ class visualisation():
             # self._draw_connections()
             self._draw_zones()
             self._draw_stations()
+            self._draw_connections()
             if self.turn_index < len(self.history) - 1:
                 self._draw_drones()
             if self.current_alien < len(aliens):
@@ -142,6 +145,8 @@ class visualisation():
             zone_type = self._zone_type_of(name)
             if zone_type == "blocked":
                 self.screen.blit(self.blocked_zone, (pos[0] - 35 ,pos[1] - 35))
+            # elif zone_type == "restricted":
+            #     self.screen.blit(self.station_zone, (pos[0] - 35 ,pos[1] - 35))
             else:
                 color = ZONE_COLOR.get(zone_type, ZONE_COLOR["normal"])
                 pygame.draw.circle(self.screen, color, pos, 18)
@@ -149,29 +154,25 @@ class visualisation():
             label_surface = my_font.render(name,True, (255, 255, 255))
             self.screen.blit(label_surface, (pos[0] - label_surface.get_width() / 2, pos[1] + 40))
     
-    def add_station(self, from_zone, to_zone):
-        if from_zone not in self.positions:
-            return
+    def create_all_stations(self):
+        for connection in self.graph.connections:
+            zone_a = connection.zone_a.name
+            zone_b = connection.zone_b.name
 
-        if to_zone not in self.positions:
-            return
-
-        key = (from_zone, to_zone)
-
-        if key not in self.stations:
-            start = self.positions[from_zone]
-            end = self.positions[to_zone]
+            start = self.positions[zone_a]
+            end = self.positions[zone_b]
 
             station_x = (start[0] + end[0]) / 2
             station_y = (start[1] + end[1]) / 2
+            self.stations[(zone_a, zone_b)] = (station_x, station_y)
 
-            self.stations[key] = (station_x, station_y)
     def _draw_stations(self):
         for station_x, station_y in self.stations.values():
             self.screen.blit(
                 self.station_zone,
                 (station_x - 35, station_y - 35)
             )
+
     def _draw_drones(self):
         frame_from = self.history[self.turn_index]
         frame_to = self.history[self.turn_index + 1]
@@ -183,20 +184,63 @@ class visualisation():
             from_zone = frame_from.get(drone_id)
             if from_zone is None:
                 continue
-            if isinstance(to_zone, str) and to_zone.startswith("waiting_"):
-                real_zone = to_zone.replace("waiting_", "")
-            
+            if (
+                isinstance(to_zone, str)
+                and to_zone.startswith("waiting_")
+            ):
+                real_zone = to_zone.replace(
+                    "waiting_", ""
+                )
+                first_pos = self.positions[from_zone]
+                second_pos= self.positions[real_zone]
+                # self.add_station(from_zone, real_zone)
+                station_x, station_y = (
+                    self.stations[(from_zone, real_zone)]
+                )
+                x = first_pos[0] + (
+                    station_x - first_pos[0]
+                ) * self.progress
+
+                y = second_pos[1] + (
+                    station_y - second_pos[1]
+                ) * self.progress
+        
+                self.screen.blit(
+                    self.alien_drone,
+                    (x - 25, y - 25)
+                )
+
+                continue
+            if isinstance(to_zone, str) and to_zone.startswith("moving_waiting_"):
+                real_zone = to_zone.replace("moving_waiting_", "")
+
                 if from_zone not in self.positions:
                     continue
                 if real_zone not in self.positions:
                     continue
-                self.add_station(from_zone, real_zone)
+
+                first_pos = self.positions[from_zone]
+                second_pos= self.positions[to_zone]
+                # station_x = (
+                #     first_pos[0] + second_pos[0]
+                # ) / 2
+                # station_y = (
+                #     first_pos[1] + second_pos[1]
+                # ) / 2    
+                # self.add_station(from_zone, real_zone)
 
                 station_x, station_y = self.stations[(from_zone, real_zone)]
+                x = first_pos[0] + (
+                    station_x - first_pos[0]
+                ) * self.progress
+
+                y = second_pos[1] + (
+                    station_y - second_pos[1]
+                ) * self.progress
 
                 self.screen.blit(
                     self.alien_drone,
-                    (station_x - 25, station_y - 25)
+                    (x - 25, y - 25)
                 )
                 continue
             if from_zone not in self.positions:

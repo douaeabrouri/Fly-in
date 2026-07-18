@@ -58,7 +58,7 @@ class Simulation:
             if next_zone.zone_type == "restricted" :
                 drone.destination_zone = next_zone
                 drone.waiting_for = next_zone.name
-                drone.doing_turns = 1
+                drone.doing_turns = 2
                 continue
     
             old_zone = drone.current_zone
@@ -74,8 +74,8 @@ class Simulation:
 
             if drone.current_zone == self.graph.end:
                 drone.delivered = True
-                    
-                    
+
+
     def all_delivered(self) -> bool:
         return all(drone.delivered for drone in self.drones)
 
@@ -88,8 +88,10 @@ class Simulation:
         while True:
             frame = {}
             for d in self.drones:
-                if d.doing_turns > 0 and d.destination_zone:
-                    frame[d.drone_id] = f"waiting_{d.destination_zone.name}"
+                if d.doing_turns > 2 and d.destination_zone:
+                    frame[d.drone_id] = (f"moving_waiting_{d.destination_zone.name}")
+                elif d.doing_turns == 1 and d.destination_zone:
+                    frame[d.drone_id] =  (f"waiting_{d.destination_zone.name}")
                 else:
                     frame[d.drone_id] = d.current_zone.name
             self.data.append(frame)
