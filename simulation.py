@@ -57,8 +57,8 @@ class Simulation:
                    continue
             if next_zone.zone_type == "restricted" :
                 drone.destination_zone = next_zone
+                drone.waiting_for = next_zone.name
                 drone.doing_turns = 1
-                next_zone.incoming_drones += 1
                 continue
     
             old_zone = drone.current_zone
@@ -82,21 +82,29 @@ class Simulation:
     def run(self) -> list:
 
         self.data = []
-        self.data.append(
-            {d.drone_id: d.current_zone.name for d in self.drones}
-        )
+        # self.data.append(
+        #     {d.drone_id: d.current_zone.name for d in self.drones}
+        # )
+        while True:
+            frame = {}
+            for d in self.drones:
+                if d.doing_turns > 0 and d.destination_zone:
+                    frame[d.drone_id] = f"waiting_{d.destination_zone.name}"
+                else:
+                    frame[d.drone_id] = d.current_zone.name
+            self.data.append(frame)
 
-        while not self.all_delivered():
+            if self.all_delivered():
+                break
+
             self.turn += 1
             self.step_to_goal()
-            self.data.append(
-                {d.drone_id: d.current_zone.name for d in self.drones}
-            )
             # movements = []
             # if movements:
             #     move = " ".join(movements)
             #     print(f"Turn {self.turn} -> {move}")
             # return movements
+
         return self.data
 def main():
     filepath = "map/my_maps.txt"

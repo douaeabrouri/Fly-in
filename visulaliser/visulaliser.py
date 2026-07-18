@@ -21,7 +21,6 @@ class visualisation():
     def __init__(self,graph, history) -> None:
         self.graph = graph
         self.history = history
-        # self.turn_index = 0
 
         pygame.init()
         self.screen = pygame.display.set_mode((WINDOW_W,WINDOW_H))
@@ -44,7 +43,9 @@ class visualisation():
         self.priority_zone = pygame.image.load("visulaliser/alien/priority_zone.png")
         self.priority_zone = pygame.transform.scale(self.priority_zone, (90, 90))
         self.normal_zone = pygame.image.load("visulaliser/alien/normal_zone.png")
-        self.normal_zone = pygame.transform.scale(self.normal_zone, (70, 70))
+        self.normal_zone = pygame.transform.scale(self.normal_zone, (70, 70))       
+        self.station_zone = pygame.image.load("visulaliser/alien/space_station.png")
+        self.station_zone = pygame.transform.scale(self.station_zone, (70, 70))
 
         aliens = [
             {"start": (1300,40), "end": (-60,40)},
@@ -57,6 +58,7 @@ class visualisation():
         self.progress = 0.0
         self.pause = False
         self.pause_start = 0
+        self.stations = {}
 
         while True:
             for event in pygame.event.get():
@@ -67,6 +69,7 @@ class visualisation():
             self.screen.blit(self.image,(0,0))
             # self._draw_connections()
             self._draw_zones()
+            self._draw_stations()
             if self.turn_index < len(self.history) - 1:
                 self._draw_drones()
             if self.current_alien < len(aliens):
@@ -146,6 +149,29 @@ class visualisation():
             label_surface = my_font.render(name,True, (255, 255, 255))
             self.screen.blit(label_surface, (pos[0] - label_surface.get_width() / 2, pos[1] + 40))
     
+    def add_station(self, from_zone, to_zone):
+        if from_zone not in self.positions:
+            return
+
+        if to_zone not in self.positions:
+            return
+
+        key = (from_zone, to_zone)
+
+        if key not in self.stations:
+            start = self.positions[from_zone]
+            end = self.positions[to_zone]
+
+            station_x = (start[0] + end[0]) / 2
+            station_y = (start[1] + end[1]) / 2
+
+            self.stations[key] = (station_x, station_y)
+    def _draw_stations(self):
+        for station_x, station_y in self.stations.values():
+            self.screen.blit(
+                self.station_zone,
+                (station_x - 35, station_y - 35)
+            )
     def _draw_drones(self):
         frame_from = self.history[self.turn_index]
         frame_to = self.history[self.turn_index + 1]
@@ -153,17 +179,35 @@ class visualisation():
         for drone_id, to_zone in frame_to.items():
 
             self.positions = self.zones_positions()
-            # print(self.positions)
+
             from_zone = frame_from.get(drone_id)
             if from_zone is None:
                 continue
+            if isinstance(to_zone, str) and to_zone.startswith("waiting_"):
+                real_zone = to_zone.replace("waiting_", "")
+            
+                if from_zone not in self.positions:
+                    continue
+                if real_zone not in self.positions:
+                    continue
+                self.add_station(from_zone, real_zone)
+
+                station_x, station_y = self.stations[(from_zone, real_zone)]
+
+                self.screen.blit(
+                    self.alien_drone,
+                    (station_x - 25, station_y - 25)
+                )
+                continue
             if from_zone not in self.positions:
                 continue
+            if to_zone not in self.positions:
+                continue
             start = self.positions[from_zone]
-            end = self.positions[to_zone]
-      
-            x = start[0] + ((end[0] - start[0])) * self.progress
-            y = start[1] + ((end[1] - start[1])) * self.progress
+            end = self.positions[to_zone]        
+            x = start[0] + (end[0] - start[0]) * self.progress
+            y = start[1] + (end[1] - start[1]) * self.progress
+
             self.screen.blit(self.alien_drone, (x - 25, y - 25))
 
 def main():
@@ -176,5 +220,6 @@ def main():
     vis = visualisation(simulation.graph, data)
     vis._draw_zones()
     # vis._draw_connections()
+    # vis._draw_stations()
     vis._draw_drones() 
 main()
