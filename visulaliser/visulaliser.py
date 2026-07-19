@@ -63,31 +63,46 @@ class visualisation():
         self.create_all_stations()
 
         while True:
+            # print(
+            #     "turn_index:",
+            #     self.turn_index,
+            #     "progress:",
+            #     self.progress
+            # )
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
 
             self.screen.blit(self.image,(0,0))
-            # self._draw_connections()
             self._draw_zones()
+            # if self.graph.zones.zone_type == "restricted":
             self._draw_stations()
             self._draw_connections()
             if self.turn_index < len(self.history) - 1:
+                # print("dkhlt hna")
                 self._draw_drones()
-            if self.current_alien < len(aliens):
+            # if self.current_alien < len(aliens):
                 if self.pause:
+                    print("PAUSED")
                     if pygame.time.get_ticks() - self.pause_start > 1000:
+                        print("UNPAUSE")
                         self.pause = False
                         self.progress = 0
                 else:
                     self.progress += 0.003
-                    if self.progress >= 1:
+                    if self.progress >= 0.99:
+                        print("ENTERED >=1")
                         self.pause = True
                         self.pause_start = pygame.time.get_ticks()
+                        print("before reset:", self.progress)
                         self.progress = 0
-                        self.current_alien = (self.current_alien + 1) % len(aliens)
+                        print("after reset:", self.progress)
+                        # self.current_alien = (self.current_alien + 1) % len(aliens)
+                        print("turn_index =", self.turn_index)
+                        print("history len =", len(self.history))
                         if self.turn_index < len(self.history) - 2:
+                            # print("wdkhlt hta hnaya")
                             self.turn_index += 1
                 start = aliens[self.current_alien]["start"]
                 end = aliens[self.current_alien]["end"]
@@ -167,7 +182,12 @@ class visualisation():
             self.stations[(zone_a, zone_b)] = (station_x, station_y)
 
     def _draw_stations(self):
-        for station_x, station_y in self.stations.values():
+        for (from_zone, to_zone), (station_x, station_y) in self.stations.items():
+            zone = self.graph.zones[to_zone]
+
+            if zone.zone_type != "restricted":
+                continue
+
             self.screen.blit(
                 self.station_zone,
                 (station_x - 35, station_y - 35)
@@ -182,6 +202,15 @@ class visualisation():
             self.positions = self.zones_positions()
 
             from_zone = frame_from.get(drone_id)
+            # print(
+            #     "turn",
+            #     self.turn_index,
+            #     "from",
+            #     frame_from,
+            #     "to",
+            #     frame_to,
+            # )
+            # print(drone_id, from_zone ,"=>", to_zone)
             if from_zone is None:
                 continue
             if (
@@ -197,6 +226,7 @@ class visualisation():
                 station_x, station_y = (
                     self.stations[(from_zone, real_zone)]
                 )
+                end_x, end_y = self.positions[real_zone]
                 x = first_pos[0] + (
                     station_x - first_pos[0]
                 ) * self.progress
@@ -204,10 +234,11 @@ class visualisation():
                 y = second_pos[1] + (
                     station_y - second_pos[1]
                 ) * self.progress
-        
+            
+                offset = (drone_id - 1) * 20
                 self.screen.blit(
                     self.alien_drone,
-                    (x - 25, y - 25)
+                    (x - 25 + offset, y - 25)
                 )
 
                 continue
@@ -221,13 +252,6 @@ class visualisation():
 
                 first_pos = self.positions[from_zone]
                 second_pos= self.positions[to_zone]
-                # station_x = (
-                #     first_pos[0] + second_pos[0]
-                # ) / 2
-                # station_y = (
-                #     first_pos[1] + second_pos[1]
-                # ) / 2    
-                # self.add_station(from_zone, real_zone)
 
                 station_x, station_y = self.stations[(from_zone, real_zone)]
                 x = first_pos[0] + (
@@ -240,7 +264,7 @@ class visualisation():
 
                 self.screen.blit(
                     self.alien_drone,
-                    (x - 25, y - 25)
+                    (x - 25 + offset, y - 25)
                 )
                 continue
             if from_zone not in self.positions:

@@ -55,10 +55,12 @@ class Simulation:
             if next_zone not in (self.graph.start, self.graph.end):
                 if (next_zone.inside_zone + next_zone.incoming_drones) >= next_zone.max_drones:        
                    continue
+
             if next_zone.zone_type == "restricted" :
                 drone.destination_zone = next_zone
                 drone.waiting_for = next_zone.name
-                drone.doing_turns = 2
+                drone.doing_turns = 1
+                next_zone.incoming_drones += 1
                 continue
     
             old_zone = drone.current_zone
@@ -95,7 +97,6 @@ class Simulation:
                 else:
                     frame[d.drone_id] = d.current_zone.name
             self.data.append(frame)
-
             if self.all_delivered():
                 break
 
