@@ -27,14 +27,14 @@ class Simulation:
             print(f"ERROR: {e}")
 
     def step_to_goal(self) -> None:
-        
+        link_usage = {}
         for drone in self.drones:
             if drone.delivered:
                 continue
             if drone.path_index >= len(drone.path) - 1:
                 continue
 
-
+   
             if drone.doing_turns > 0:
                 drone.doing_turns -= 1
                 if drone.doing_turns == 0:
@@ -51,15 +51,37 @@ class Simulation:
                 continue
 
             next_zone = drone.path[drone.path_index + 1]
+    
 
+            edge = None
+
+            for e in self.graph.connections:
+                if (
+                    (e.zone_a == drone.current_zone and e.zone_b == next_zone)
+                    or
+                    (e.zone_b == drone.current_zone and e.zone_a == next_zone)
+                ):
+                    edge = e
+                    break
+
+            if edge is None:
+                continue
+            if link_usage.get(edge, 0) >= edge.max_link_capacity:
+                # print(link_usage.get(edge, 0), edge.max_link_capacity)
+                continue
+
+            link_usage[edge] = link_usage.get(edge ,0) + 1
+
+  
             if next_zone not in (self.graph.start, self.graph.end):
                 if (next_zone.inside_zone + next_zone.incoming_drones) >= next_zone.max_drones:        
                    continue
+            
 
             if next_zone.zone_type == "restricted" :
                 drone.destination_zone = next_zone
                 drone.waiting_for = next_zone.name
-                drone.doing_turns = 1
+                drone.doing_turns = 2
                 next_zone.incoming_drones += 1
                 continue
     
@@ -70,10 +92,6 @@ class Simulation:
             drone.current_zone = next_zone
             drone.path_index += 1
 
-            # movements.append(
-            #     f"D{drone.drone_id}-{drone.current_zone.name}"
-            # )
-
             if drone.current_zone == self.graph.end:
                 drone.delivered = True
 
@@ -82,31 +100,22 @@ class Simulation:
         return all(drone.delivered for drone in self.drones)
 
     def run(self) -> list:
-
         self.data = []
-        # self.data.append(
-        #     {d.drone_id: d.current_zone.name for d in self.drones}
-        # )
         while True:
             frame = {}
             for d in self.drones:
-                if d.doing_turns > 2 and d.destination_zone:
+
+                if d.doing_turns == 2:
                     frame[d.drone_id] = (f"moving_waiting_{d.destination_zone.name}")
-                elif d.doing_turns == 1 and d.destination_zone:
+                elif d.doing_turns == 1:
                     frame[d.drone_id] =  (f"waiting_{d.destination_zone.name}")
                 else:
                     frame[d.drone_id] = d.current_zone.name
             self.data.append(frame)
             if self.all_delivered():
                 break
-
             self.turn += 1
             self.step_to_goal()
-            # movements = []
-            # if movements:
-            #     move = " ".join(movements)
-            #     print(f"Turn {self.turn} -> {move}")
-            # return movements
 
         return self.data
 def main():

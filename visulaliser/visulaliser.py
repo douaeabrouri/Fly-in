@@ -63,47 +63,35 @@ class visualisation():
         self.create_all_stations()
 
         while True:
-            # print(
-            #     "turn_index:",
-            #     self.turn_index,
-            #     "progress:",
-            #     self.progress
-            # )
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
 
+            # print(
+            #     "turn_index =", self.turn_index,
+            #     "history =", len(self.history)
+            # )
             self.screen.blit(self.image,(0,0))
-            self._draw_zones()
-            # if self.graph.zones.zone_type == "restricted":
-            self._draw_stations()
             self._draw_connections()
+            self._draw_zones()
+            self._draw_stations()
+            self._draw_drones()
             if self.turn_index < len(self.history) - 1:
-                # print("dkhlt hna")
                 self._draw_drones()
-            # if self.current_alien < len(aliens):
                 if self.pause:
-                    print("PAUSED")
-                    if pygame.time.get_ticks() - self.pause_start > 1000:
-                        print("UNPAUSE")
+                    if pygame.time.get_ticks() - self.pause_start > 2000:
                         self.pause = False
                         self.progress = 0
                 else:
-                    self.progress += 0.003
+                    self.progress += 0.008
                     if self.progress >= 0.99:
-                        print("ENTERED >=1")
                         self.pause = True
                         self.pause_start = pygame.time.get_ticks()
-                        print("before reset:", self.progress)
                         self.progress = 0
-                        print("after reset:", self.progress)
-                        # self.current_alien = (self.current_alien + 1) % len(aliens)
-                        print("turn_index =", self.turn_index)
-                        print("history len =", len(self.history))
-                        if self.turn_index < len(self.history) - 2:
-                            # print("wdkhlt hta hnaya")
-                            self.turn_index += 1
+                        self.turn_index += 1
+                        if self.turn_index < len(self.history) - 1:
+                            self.pause = True
                 start = aliens[self.current_alien]["start"]
                 end = aliens[self.current_alien]["end"]
 
@@ -114,6 +102,7 @@ class visualisation():
 
             pygame.display.update()
             clock.tick(60)
+            # break
     
     def zones_positions(self) -> dict:
         zones = list(self.graph.zones.values())
@@ -145,7 +134,7 @@ class visualisation():
         if zone is self.graph.start:
             return "start"
         if zone is self.graph.end:
-            return "end" 
+            return "end"
         return zone.zone_type
 
     def connections_position(self):
@@ -160,8 +149,6 @@ class visualisation():
             zone_type = self._zone_type_of(name)
             if zone_type == "blocked":
                 self.screen.blit(self.blocked_zone, (pos[0] - 35 ,pos[1] - 35))
-            # elif zone_type == "restricted":
-            #     self.screen.blit(self.station_zone, (pos[0] - 35 ,pos[1] - 35))
             else:
                 color = ZONE_COLOR.get(zone_type, ZONE_COLOR["normal"])
                 pygame.draw.circle(self.screen, color, pos, 18)
@@ -194,89 +181,76 @@ class visualisation():
             )
 
     def _draw_drones(self):
+        if self.turn_index >= len(self.history) - 1:
+            return
         frame_from = self.history[self.turn_index]
         frame_to = self.history[self.turn_index + 1]
-        
+     
         for drone_id, to_zone in frame_to.items():
-
             self.positions = self.zones_positions()
-
             from_zone = frame_from.get(drone_id)
-            # print(
-            #     "turn",
-            #     self.turn_index,
-            #     "from",
-            #     frame_from,
-            #     "to",
-            #     frame_to,
-            # )
-            # print(drone_id, from_zone ,"=>", to_zone)
+            # print("from=", from_zone, "to=", to_zone)
             if from_zone is None:
                 continue
+            from_zone_display = from_zone
+            if isinstance(from_zone, str):
+                if from_zone.startswith("moving_waiting_"):
+                    from_zone_display = from_zone.replace("moving_waiting_", "")
+                elif from_zone.startswith("waiting_"):
+                    from_zone_display = from_zone.replace("waiting_", "")
             if (
                 isinstance(to_zone, str)
-                and to_zone.startswith("waiting_")
+                and (
+                    to_zone.startswith("waiting_")
+                    or to_zone.startswith("moving_waiting_")
+                )
             ):
-                real_zone = to_zone.replace(
-                    "waiting_", ""
-                )
-                first_pos = self.positions[from_zone]
-                second_pos= self.positions[real_zone]
-                # self.add_station(from_zone, real_zone)
-                station_x, station_y = (
-                    self.stations[(from_zone, real_zone)]
-                )
-                end_x, end_y = self.positions[real_zone]
-                x = first_pos[0] + (
-                    station_x - first_pos[0]
-                ) * self.progress
-
-                y = second_pos[1] + (
-                    station_y - second_pos[1]
-                ) * self.progress
-            
-                offset = (drone_id - 1) * 20
-                self.screen.blit(
-                    self.alien_drone,
-                    (x - 25 + offset, y - 25)
-                )
-
-                continue
-            if isinstance(to_zone, str) and to_zone.startswith("moving_waiting_"):
-                real_zone = to_zone.replace("moving_waiting_", "")
-
+                if to_zone.startswith("moving_waiting_"):
+                    real_zone = to_zone.replace(
+                        "moving_waiting_", ""
+                    )
+                else:
+                    real_zone = to_zone.replace("waiting_", "")
+    
                 if from_zone not in self.positions:
                     continue
                 if real_zone not in self.positions:
                     continue
-
+                
                 first_pos = self.positions[from_zone]
-                second_pos= self.positions[to_zone]
 
                 station_x, station_y = self.stations[(from_zone, real_zone)]
+
                 x = first_pos[0] + (
                     station_x - first_pos[0]
                 ) * self.progress
 
-                y = second_pos[1] + (
-                    station_y - second_pos[1]
+                y = first_pos[1] + (
+                    station_y - first_pos[1]
                 ) * self.progress
-
+                print(
+                    "DRAWING",
+                    drone_id,
+                    "x=", x,
+                    "y=", y
+                )
+                offset = drone_id * 10
                 self.screen.blit(
                     self.alien_drone,
                     (x - 25 + offset, y - 25)
                 )
                 continue
+
             if from_zone not in self.positions:
                 continue
             if to_zone not in self.positions:
                 continue
-            start = self.positions[from_zone]
+            start = self.positions[from_zone_display]
             end = self.positions[to_zone]        
             x = start[0] + (end[0] - start[0]) * self.progress
             y = start[1] + (end[1] - start[1]) * self.progress
-
-            self.screen.blit(self.alien_drone, (x - 25, y - 25))
+            offset = drone_id * 10
+            self.screen.blit(self.alien_drone, (x - 25 + offset, y - 25))
 
 def main():
     filepath = "map/my_maps.txt"
@@ -286,8 +260,4 @@ def main():
     simulation.give_me_all_paths()
     data = simulation.run()
     vis = visualisation(simulation.graph, data)
-    vis._draw_zones()
-    # vis._draw_connections()
-    # vis._draw_stations()
-    vis._draw_drones() 
 main()

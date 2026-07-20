@@ -91,8 +91,9 @@ class Parser:
                             for data in meta_part.split():
                                 if data.startswith("max_link_capacity="):
                                     max_link_capacity = int(data.split("=")[1])
-                                    if max_link_capacity <= 2:
+                                    if max_link_capacity <= 0:
                                         raise ValueError("Capacity must be positive")
+                            # print(f"max_link capacity => {max_link_capacity}")
                             zone_a = graph.get_zone(name1)
                             zone_b = graph.get_zone(name2)
                             connection = Connection(zone_a, zone_b, max_link_capacity)
