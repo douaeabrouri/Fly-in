@@ -5,6 +5,9 @@ import sys
 class Parser:
 
     def _help_to_parse_hub(self, content: str) -> Zone:
+
+        if '[' in content and ']' not in content:
+            raise ValueError(f"Messing brackets [...]")
         try:
             if '[' in content:
                 main_part, meta_part = content.split('[', 1)
@@ -74,6 +77,8 @@ class Parser:
                         graph.add_zone(zone)
 
                     elif line.startswith("connection"):
+                        if '[' in content and ']' not in content:
+                            raise ValueError(f"Messing brackets [...]")
                         try:
                             content = str(line.removeprefix("connection:")).strip()
                             if '[' in content:

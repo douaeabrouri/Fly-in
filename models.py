@@ -25,6 +25,10 @@ class Graph:
        self.nb_drones: int = 0
 
     def add_zone(self, zone: Zone) -> None:
+        # TODO ; check if theres alredy a zon created for spicifiq name
+        for name in self.zones :
+            if name == zone.name :
+                raise ValueError(f"duplicated names {name}")
         self.zones[zone.name] = zone
     
     def add_connection(self, connection: Connection) -> None:

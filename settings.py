@@ -1,0 +1,1 @@
+CIRCL_RADIUS = 18

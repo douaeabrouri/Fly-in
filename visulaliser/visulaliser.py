@@ -75,24 +75,16 @@ class visualisation():
             self._draw_drones()
 
             if self.turn_index < len(self.history) - 1:
-                # print("DRAW", self.progress))
                 if self.pause:
-                    print("PAUSE IS TRUE")
-                    print(f"the timing is : ${pygame.time.get_ticks() - self.pause_start}")
                     if pygame.time.get_ticks() - self.pause_start > 1000:
-                        print("RESETING SELF TO FALSE")
                         self.pause = False
                 else:
-                    # print("UPDATE", self.progress)
-                    print("PAUSE IS FALSE")
                     self.progress += 0.008
                     if self.progress >= 0.99:
                         self.pause = True
                         self.pause_start = pygame.time.get_ticks()
                         self.progress = 0
                         self.turn_index += 1
-                        # if self.turn_index < len(self.history) - 1:
-                        #     self.pause = True
                 # start = aliens[self.current_alien]["start"]
                 # end = aliens[self.current_alien]["end"]
 
