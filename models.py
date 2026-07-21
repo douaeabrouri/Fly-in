@@ -52,4 +52,3 @@ class Drone:
         self.doing_turns: int = 0
         self.destination_zone: Zone | None = None
         self.waiting_for: Zone | None = None
-

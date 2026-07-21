@@ -53,13 +53,14 @@ class visualisation():
             {"start": (-90, 200), "end": (100, 800)},
         ]
 
-        self.turn_index = 0
+        self.turn_index: int = 0
         self.positions = self.zones_positions()
         self.current_alien = 0
         self.progress = 0.0
         self.pause = False
         self.pause_start = 0
         self.stations = {}
+        self.transit_origin: dict[int, str] = {}
         self.create_all_stations()
 
         while True:
@@ -67,42 +68,41 @@ class visualisation():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-
-            # print(
-            #     "turn_index =", self.turn_index,
-            #     "history =", len(self.history)
-            # )
             self.screen.blit(self.image,(0,0))
             self._draw_connections()
             self._draw_zones()
             self._draw_stations()
             self._draw_drones()
+
             if self.turn_index < len(self.history) - 1:
-                self._draw_drones()
+                # print("DRAW", self.progress))
                 if self.pause:
-                    if pygame.time.get_ticks() - self.pause_start > 2000:
+                    print("PAUSE IS TRUE")
+                    print(f"the timing is : ${pygame.time.get_ticks() - self.pause_start}")
+                    if pygame.time.get_ticks() - self.pause_start > 1000:
+                        print("RESETING SELF TO FALSE")
                         self.pause = False
-                        self.progress = 0
                 else:
+                    # print("UPDATE", self.progress)
+                    print("PAUSE IS FALSE")
                     self.progress += 0.008
                     if self.progress >= 0.99:
                         self.pause = True
                         self.pause_start = pygame.time.get_ticks()
                         self.progress = 0
                         self.turn_index += 1
-                        if self.turn_index < len(self.history) - 1:
-                            self.pause = True
-                start = aliens[self.current_alien]["start"]
-                end = aliens[self.current_alien]["end"]
+                        # if self.turn_index < len(self.history) - 1:
+                        #     self.pause = True
+                # start = aliens[self.current_alien]["start"]
+                # end = aliens[self.current_alien]["end"]
 
-                x = start[0] + (end[0] - start[0]) * self.progress
-                y = start[1] + (end[1] - start[1]) * self.progress
+                # x = start[0] + (end[0] - start[0]) * self.progress
+                # y = start[1] + (end[1] - start[1]) * self.progress
 
-                self.screen.blit(self.alien_surface, (x, y))
+                # self.screen.blit(self.alien_surface, (x, y))
 
             pygame.display.update()
             clock.tick(60)
-            # break
     
     def zones_positions(self) -> dict:
         zones = list(self.graph.zones.values())
@@ -185,42 +185,30 @@ class visualisation():
             return
         frame_from = self.history[self.turn_index]
         frame_to = self.history[self.turn_index + 1]
-     
+        # print("FRAME_FROM =", frame_from)
+        # print("FRAME_TO   =", frame_to)
         for drone_id, to_zone in frame_to.items():
             self.positions = self.zones_positions()
             from_zone = frame_from.get(drone_id)
-            # print("from=", from_zone, "to=", to_zone)
             if from_zone is None:
                 continue
-            from_zone_display = from_zone
-            if isinstance(from_zone, str):
-                if from_zone.startswith("moving_waiting_"):
-                    from_zone_display = from_zone.replace("moving_waiting_", "")
-                elif from_zone.startswith("waiting_"):
-                    from_zone_display = from_zone.replace("waiting_", "")
+            
             if (
-                isinstance(to_zone, str)
-                and (
-                    to_zone.startswith("waiting_")
-                    or to_zone.startswith("moving_waiting_")
-                )
+                isinstance(from_zone, str)
+                and not from_zone.startswith(("waiting_", "moving_waiting_"))
+                and isinstance(to_zone, str)
+                and to_zone.startswith("moving_waiting_")
             ):
-                if to_zone.startswith("moving_waiting_"):
-                    real_zone = to_zone.replace(
-                        "moving_waiting_", ""
-                    )
-                else:
-                    real_zone = to_zone.replace("waiting_", "")
-    
-                if from_zone not in self.positions:
-                    continue
-                if real_zone not in self.positions:
-                    continue
-                
-                first_pos = self.positions[from_zone]
+                # print("LEG 1")
+                real_zone = to_zone.replace("moving_waiting_", "")
+                self.transit_origin[drone_id] = from_zone
 
+                if from_zone not in self.positions or real_zone not in self.positions :
+                    continue
+                    
+                    
                 station_x, station_y = self.stations[(from_zone, real_zone)]
-
+                first_pos = self.positions[from_zone]
                 x = first_pos[0] + (
                     station_x - first_pos[0]
                 ) * self.progress
@@ -228,29 +216,65 @@ class visualisation():
                 y = first_pos[1] + (
                     station_y - first_pos[1]
                 ) * self.progress
-                print(
-                    "DRAWING",
-                    drone_id,
-                    "x=", x,
-                    "y=", y
-                )
                 offset = drone_id * 10
                 self.screen.blit(
                     self.alien_drone,
                     (x - 25 + offset, y - 25)
                 )
                 continue
+            if (
+                isinstance(from_zone, str)
+                and from_zone.startswith("moving_waiting_")
+                and isinstance(to_zone, str)
+                and to_zone.startswith("waiting_")
+            ):
+                # print("LEG 2")
+
+                real_zone = to_zone.replace("waiting_", "")
+                origin_zone = self.transit_origin.get(drone_id)
+
+                if origin_zone is None:
+                    continue
+
+                x, y = self.stations[(origin_zone, real_zone)]
+                offset = drone_id * 10
+                self.screen.blit(
+                    self.alien_drone,
+                    (x - 25 + offset, y - 25)
+                )
+
+                continue
+            if isinstance(from_zone, str) and from_zone.startswith("waiting_"):
+                # print("LEG 3")
+                # print(
+                #     "LEG3",
+                #     "progress=", self.progress,
+                #     "pause=", self.pause
+                # )
+                # print(self.pause)
+                origin_zone = self.transit_origin.get(drone_id)
+                if origin_zone is None or to_zone not in self.positions:
+                    continue
+                station_x, station_y = self.stations[(origin_zone, to_zone)]
+                end_x, end_y = self.positions[to_zone]
+                x = station_x + (end_x - station_x) * self.progress
+                y = station_y + (end_y - station_y) * self.progress
+                offset = drone_id * 10
+                self.screen.blit(self.alien_drone, (x - 25 + offset, y - 25))
+                continue
+
 
             if from_zone not in self.positions:
                 continue
             if to_zone not in self.positions:
                 continue
-            start = self.positions[from_zone_display]
-            end = self.positions[to_zone]        
+            start = self.positions[from_zone]
+            end = self.positions[to_zone]      
             x = start[0] + (end[0] - start[0]) * self.progress
-            y = start[1] + (end[1] - start[1]) * self.progress
+            y = start[1] + (end[1] - start[1]) * self.progress  
             offset = drone_id * 10
             self.screen.blit(self.alien_drone, (x - 25 + offset, y - 25))
+            continue
 
 def main():
     filepath = "map/my_maps.txt"
