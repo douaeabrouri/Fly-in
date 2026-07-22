@@ -36,14 +36,7 @@ class visualisation():
         self.alien_drone = pygame.transform.scale(self.alien_drone, (50,50))
         self.blocked_zone = pygame.image.load("visulaliser/alien/blocked_zone.png")
         self.blocked_zone = pygame.transform.scale(self.blocked_zone,(70, 70))
-        self.goal_zone = pygame.image.load("visulaliser/alien/goal.png")
-        self.goal_zone = pygame.transform.scale(self.goal_zone, (90, 90))
-        self.start_zone = pygame.image.load("visulaliser/alien/start_zone.png")
-        self.start_zone = pygame.transform.scale(self.start_zone, (90, 90))
-        self.priority_zone = pygame.image.load("visulaliser/alien/priority_zone.png")
-        self.priority_zone = pygame.transform.scale(self.priority_zone, (90, 90))
-        self.normal_zone = pygame.image.load("visulaliser/alien/normal_zone.png")
-        self.normal_zone = pygame.transform.scale(self.normal_zone, (70, 70))       
+    
         self.station_zone = pygame.image.load("visulaliser/alien/space_station.png")
         self.station_zone = pygame.transform.scale(self.station_zone, (70, 70))
 
@@ -62,7 +55,9 @@ class visualisation():
         self.stations = {}
         self.transit_origin: dict[int, str] = {}
         self.create_all_stations()
-
+        self.aliens = aliens
+        self.progress_for_animation: int = 0.0
+        
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -85,16 +80,32 @@ class visualisation():
                         self.pause_start = pygame.time.get_ticks()
                         self.progress = 0
                         self.turn_index += 1
-                # start = aliens[self.current_alien]["start"]
-                # end = aliens[self.current_alien]["end"]
+            alien = self.aliens[self.current_alien]
+            start = alien["start"]
+            end = alien["end"]
+            self.progress_for_animation += 0.004
+            if self.progress_for_animation >= 1.0:
+                self.progress_for_animation = 0.0
+                self.current_alien = (self.current_alien + 1) % len(self.aliens)
+                alien = self.aliens[self.current_alien]
+                start = alien["start"]
+                end = alien["end"]
+            
+            x = start[0] + (end[0] - start[0]) * self.progress_for_animation
+            y = start[1] + (end[1] - start[1]) * self.progress_for_animation
 
-                # x = start[0] + (end[0] - start[0]) * self.progress
-                # y = start[1] + (end[1] - start[1]) * self.progress
-
-                # self.screen.blit(self.alien_surface, (x, y))
+            self.screen.blit(self.alien_surface, (x, y))
 
             pygame.display.update()
             clock.tick(60)
+
+    def _grid_offset(self, drone_id: int, per_row: int = 4, spacing: int = 10) -> tuple[float, float]:
+        index = drone_id - 1
+        row = index // per_row
+        col = index % per_row
+        x_off = (col - (per_row - 1) / 2) * spacing
+        y_off = row * spacing
+        return x_off, y_off
     
     def zones_positions(self) -> dict:
         zones = list(self.graph.zones.values())
@@ -163,10 +174,8 @@ class visualisation():
     def _draw_stations(self):
         for (from_zone, to_zone), (station_x, station_y) in self.stations.items():
             zone = self.graph.zones[to_zone]
-
             if zone.zone_type != "restricted":
                 continue
-
             self.screen.blit(
                 self.station_zone,
                 (station_x - 35, station_y - 35)
@@ -177,8 +186,6 @@ class visualisation():
             return
         frame_from = self.history[self.turn_index]
         frame_to = self.history[self.turn_index + 1]
-        # print("FRAME_FROM =", frame_from)
-        # print("FRAME_TO   =", frame_to)
         for drone_id, to_zone in frame_to.items():
             self.positions = self.zones_positions()
             from_zone = frame_from.get(drone_id)
@@ -208,11 +215,8 @@ class visualisation():
                 y = first_pos[1] + (
                     station_y - first_pos[1]
                 ) * self.progress
-                offset = drone_id * 10
-                self.screen.blit(
-                    self.alien_drone,
-                    (x - 25 + offset, y - 25)
-                )
+                x_off, y_off = self._grid_offset(drone_id)
+                self.screen.blit(self.alien_drone, (x - 25 + x_off, y - 25 + y_off))
                 continue
             if (
                 isinstance(from_zone, str)
@@ -229,11 +233,8 @@ class visualisation():
                     continue
 
                 x, y = self.stations[(origin_zone, real_zone)]
-                offset = drone_id * 10
-                self.screen.blit(
-                    self.alien_drone,
-                    (x - 25 + offset, y - 25)
-                )
+                x_off, y_off = self._grid_offset(drone_id)
+                self.screen.blit(self.alien_drone, (x - 25 + x_off, y - 25 + y_off))
 
                 continue
             if isinstance(from_zone, str) and from_zone.startswith("waiting_"):
@@ -251,8 +252,8 @@ class visualisation():
                 end_x, end_y = self.positions[to_zone]
                 x = station_x + (end_x - station_x) * self.progress
                 y = station_y + (end_y - station_y) * self.progress
-                offset = drone_id * 10
-                self.screen.blit(self.alien_drone, (x - 25 + offset, y - 25))
+                x_off, y_off = self._grid_offset(drone_id)
+                self.screen.blit(self.alien_drone, (x - 25 + x_off, y - 25 + y_off))
                 continue
 
 
@@ -264,8 +265,8 @@ class visualisation():
             end = self.positions[to_zone]      
             x = start[0] + (end[0] - start[0]) * self.progress
             y = start[1] + (end[1] - start[1]) * self.progress  
-            offset = drone_id * 10
-            self.screen.blit(self.alien_drone, (x - 25 + offset, y - 25))
+            x_off, y_off = self._grid_offset(drone_id)
+            self.screen.blit(self.alien_drone, (x - 25 + x_off, y - 25 + y_off))
             continue
 
 def main():
@@ -276,4 +277,5 @@ def main():
     simulation.give_me_all_paths()
     data = simulation.run()
     vis = visualisation(simulation.graph, data)
+
 main()

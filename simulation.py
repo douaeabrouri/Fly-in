@@ -2,6 +2,7 @@ from models import Graph, Zone, Connection, Drone
 from pathfinder import Pathfinder
 from parsing import Parser
 from typing import List
+import sys
 
 class Simulation:
     def __init__(self,graph: Graph) -> None:
@@ -32,9 +33,10 @@ class Simulation:
             if drone.delivered:
                 continue
             if drone.path_index >= len(drone.path) - 1:
+                # TODO i should fix the error keyboardInterrput
                 continue
 
-   
+
             if drone.doing_turns > 0:
                 drone.doing_turns -= 1
                 if drone.doing_turns == 0:
@@ -67,15 +69,14 @@ class Simulation:
             if edge is None:
                 continue
             if link_usage.get(edge, 0) >= edge.max_link_capacity:
-                # print(link_usage.get(edge, 0), edge.max_link_capacity)
                 continue
 
             link_usage[edge] = link_usage.get(edge ,0) + 1
 
-  
+
             if next_zone not in (self.graph.start, self.graph.end):
                 if (next_zone.inside_zone + next_zone.incoming_drones) >= next_zone.max_drones:        
-                   continue
+                    continue
             
 
             if next_zone.zone_type == "restricted" :
@@ -122,9 +123,16 @@ def main():
     filepath = "map/my_maps.txt"
     parser = Parser()
     graph = parser.parse(filepath)
-    simulation = Simulation(graph)
-    simulation.give_me_all_paths()
-    data = simulation.run()
-    for turn, frame in enumerate(data):
-        print(f"turn {turn}: {frame}")
+    try:
+        simulation = Simulation(graph)
+        simulation.give_me_all_paths()
+        data = simulation.run()
+        print(data)
+        for turn, frame in enumerate(data):
+            for id, zone in frame.items():
+                print(f"turn {turn}: D{id}-{zone}")
+    except KeyboardInterrupt:
+        print("PROCESS INTERRUPTED!")
+        sys.exit()
+        
 main()

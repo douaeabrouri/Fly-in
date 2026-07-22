@@ -6,7 +6,7 @@ class Parser:
 
     def _help_to_parse_hub(self, content: str) -> Zone:
 
-        if '[' in content and ']' not in content:
+        if '[' in content and ']' not in content or ']' in content and '[' not in content :
             raise ValueError(f"Messing brackets [...]")
         try:
             if '[' in content:
@@ -77,7 +77,7 @@ class Parser:
                         graph.add_zone(zone)
 
                     elif line.startswith("connection"):
-                        if '[' in content and ']' not in content:
+                        if '[' in content and ']' not in content or ']' in content and '[' not in content : 
                             raise ValueError(f"Messing brackets [...]")
                         try:
                             content = str(line.removeprefix("connection:")).strip()
@@ -98,7 +98,6 @@ class Parser:
                                     max_link_capacity = int(data.split("=")[1])
                                     if max_link_capacity <= 0:
                                         raise ValueError("Capacity must be positive")
-                            # print(f"max_link capacity => {max_link_capacity}")
                             zone_a = graph.get_zone(name1)
                             zone_b = graph.get_zone(name2)
                             connection = Connection(zone_a, zone_b, max_link_capacity)
