@@ -4,20 +4,20 @@ from parsing import Parser
 from typing import List
 import sys
 
+
 class Simulation:
-    def __init__(self,graph: Graph) -> None:
+    def __init__(self, graph: Graph) -> None:
         self.graph = graph
         self.drones: list[Drone] = []
         self.turn: int = 0
-    
+
     def give_me_all_paths(self) -> None:
-        
         try:
             pathfinder = Pathfinder(self.graph)
             paths = pathfinder.find_all_paths()
             path_usage = [0] * len(paths)
             for i in range(self.graph.nb_drones):
-                drone = Drone(drone_id = i + 1, start = self.graph.start)
+                drone = Drone(drone_id=i + 1, start=self.graph.start)
                 best_idx = min(range(len(paths)), key=lambda idx: path_usage[idx])
 
                 drone.path = paths[best_idx]
@@ -33,35 +33,27 @@ class Simulation:
             if drone.delivered:
                 continue
             if drone.path_index >= len(drone.path) - 1:
-                # TODO i should fix the error keyboardInterrput
                 continue
-
 
             if drone.doing_turns > 0:
                 drone.doing_turns -= 1
                 if drone.doing_turns == 0:
-                    old_zone = drone.current_zone 
+                    old_zone = drone.current_zone
                     old_zone.inside_zone -= 1
                     drone.destination_zone.inside_zone += 1
                     drone.destination_zone.incoming_drones -= 1
                     drone.current_zone = drone.destination_zone
                     drone.path_index += 1
-                    # movements.append(
-                    #     f"D{drone.drone_id}-{drone.current_zone.name}"
-                    # )
                     drone.destination_zone = None
                 continue
 
             next_zone = drone.path[drone.path_index + 1]
-    
 
             edge = None
 
             for e in self.graph.connections:
-                if (
-                    (e.zone_a == drone.current_zone and e.zone_b == next_zone)
-                    or
-                    (e.zone_b == drone.current_zone and e.zone_a == next_zone)
+                if (e.zone_a == drone.current_zone and e.zone_b == next_zone) or (
+                    e.zone_b == drone.current_zone and e.zone_a == next_zone
                 ):
                     edge = e
                     break
@@ -70,25 +62,23 @@ class Simulation:
                 continue
             if link_usage.get(edge, 0) >= edge.max_link_capacity:
                 continue
-
-            link_usage[edge] = link_usage.get(edge ,0) + 1
-
+            link_usage[edge] = link_usage.get(edge, 0) + 1
 
             if next_zone not in (self.graph.start, self.graph.end):
-                if (next_zone.inside_zone + next_zone.incoming_drones) >= next_zone.max_drones:        
+                if (
+                    next_zone.inside_zone + next_zone.incoming_drones
+                ) >= next_zone.max_drones:
                     continue
-            
 
-            if next_zone.zone_type == "restricted" :
+            if next_zone.zone_type == "restricted":
                 drone.destination_zone = next_zone
                 drone.waiting_for = next_zone.name
                 drone.doing_turns = 2
                 next_zone.incoming_drones += 1
                 continue
-    
+
             old_zone = drone.current_zone
             old_zone.inside_zone -= 1
-            # next_zone.incoming_drones += 1
             next_zone.inside_zone += 1
             drone.current_zone = next_zone
             drone.path_index += 1
@@ -96,29 +86,28 @@ class Simulation:
             if drone.current_zone == self.graph.end:
                 drone.delivered = True
 
-
     def all_delivered(self) -> bool:
         return all(drone.delivered for drone in self.drones)
 
     def run(self) -> list:
         self.data = []
-        while True:
+        while not self.all_delivered():
             frame = {}
             for d in self.drones:
-
                 if d.doing_turns == 2:
-                    frame[d.drone_id] = (f"moving_waiting_{d.destination_zone.name}")
+                    frame[d.drone_id] = f"moving_waiting_{d.destination_zone.name}"
                 elif d.doing_turns == 1:
-                    frame[d.drone_id] =  (f"waiting_{d.destination_zone.name}")
+                    frame[d.drone_id] = f"waiting_{d.destination_zone.name}"
                 else:
                     frame[d.drone_id] = d.current_zone.name
             self.data.append(frame)
-            if self.all_delivered():
-                break
             self.turn += 1
+            # if self.all_delivered():
+            #     break
             self.step_to_goal()
-
         return self.data
+
+
 def main():
     filepath = "map/my_maps.txt"
     parser = Parser()
@@ -127,12 +116,12 @@ def main():
         simulation = Simulation(graph)
         simulation.give_me_all_paths()
         data = simulation.run()
-        print(data)
         for turn, frame in enumerate(data):
-            for id, zone in frame.items():
-                print(f"turn {turn}: D{id}-{zone}")
+            drones = " ".join(f"D{drone_id}-{name}" for drone_id, name in frame.items())
+            print(f"  turn {turn}: {drones}")
     except KeyboardInterrupt:
-        print("PROCESS INTERRUPTED!")
+        print("PROCESS INTERRUPT!")
         sys.exit()
-        
+
+
 main()

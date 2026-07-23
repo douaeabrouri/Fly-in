@@ -1,21 +1,26 @@
-
 from models import Zone, Connection, Graph
 import sys
+
 
 class Parser:
 
     def _help_to_parse_hub(self, content: str) -> Zone:
 
-        if '[' in content and ']' not in content or ']' in content and '[' not in content :
+        if (
+            "[" in content
+            and "]" not in content
+            or "]" in content
+            and "[" not in content
+        ):
             raise ValueError(f"Messing brackets [...]")
         try:
-            if '[' in content:
-                main_part, meta_part = content.split('[', 1)
-                meta_part = meta_part.rstrip(']')
+            if "[" in content:
+                main_part, meta_part = content.split("[", 1)
+                meta_part = meta_part.rstrip("]")
             else:
                 main_part = content
                 meta_part = ""
-                
+
             part = main_part.strip().split()
             name: str = part[0]
             x: int = int(part[1])
@@ -31,21 +36,26 @@ class Parser:
                     color = data.split("=")[1]
                 elif data.startswith("max_drones="):
                     max_drones = int(data.split("=")[1])
-                
-            zone = Zone(name=name, x=x, y=y,
-                        zone_type=zone_type,
-                        color=color,
-                        max_drones=max_drones)
+
+            zone = Zone(
+                name=name,
+                x=x,
+                y=y,
+                zone_type=zone_type,
+                color=color,
+                max_drones=max_drones,
+            )
             return zone
         except Exception as e:
             print(f"Warning: {e}")
+
     def parse(self, filepath: str) -> Graph:
         try:
             graph = Graph()
-            with open(filepath, 'r') as file:
+            with open(filepath, "r") as file:
                 for line_num, line in enumerate(file, start=1):
                     line = line.strip()
-                    if line.startswith('#') or line == "":
+                    if line.startswith("#") or line == "":
                         continue
 
                     elif line.startswith("nb_drones"):
@@ -53,10 +63,14 @@ class Parser:
                             drone_numb: int = 0
                             drone_numb = int(line.removeprefix("nb_drones:").strip())
                             if drone_numb <= 0:
-                                raise ValueError("The number of drones must be positive!")
+                                raise ValueError(
+                                    "The number of drones must be positive!"
+                                )
                             graph.nb_drones = drone_numb
                         except ValueError:
-                            raise ValueError(f"The line {line_num}: invalid drone numbers values")
+                            raise ValueError(
+                                f"The line {line_num}: invalid drone numbers values"
+                            )
 
                     elif line.startswith("start_hub"):
                         content = str(line.removeprefix("start_hub:")).strip()
@@ -70,24 +84,28 @@ class Parser:
                         graph.add_zone(zone)
                         graph.end = zone
 
-
                     elif line.startswith("hub"):
                         content = str(line.removeprefix("hub:")).strip()
                         zone = self._help_to_parse_hub(content)
                         graph.add_zone(zone)
 
                     elif line.startswith("connection"):
-                        if '[' in content and ']' not in content or ']' in content and '[' not in content : 
+                        if (
+                            "[" in content
+                            and "]" not in content
+                            or "]" in content
+                            and "[" not in content
+                        ):
                             raise ValueError(f"Messing brackets [...]")
                         try:
                             content = str(line.removeprefix("connection:")).strip()
-                            if '[' in content:
-                                main_part, meta_part = content.split('[', 1)
-                                meta_part = meta_part.rstrip(']')
+                            if "[" in content:
+                                main_part, meta_part = content.split("[", 1)
+                                meta_part = meta_part.rstrip("]")
                             else:
                                 main_part = content
                                 meta_part = ""
-                            names: list = main_part.strip().split('-')
+                            names: list = main_part.strip().split("-")
                             if len(names) != 2:
                                 raise ValueError("the numbers of names must be 2")
                             name1: str = names[0].strip()
@@ -103,7 +121,7 @@ class Parser:
                             connection = Connection(zone_a, zone_b, max_link_capacity)
                             graph.add_connection(connection)
                         except Exception as e:
-                                print(f"error: {e}")
+                            print(f"error: {e}")
         except Exception as e:
             print(f"Error on line {line_num}: {e}")
             sys.exit(1)

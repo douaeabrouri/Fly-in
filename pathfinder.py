@@ -3,10 +3,11 @@ from collections import deque
 from parsing import Parser
 import queue
 
+
 class Pathfinder:
     def __init__(self, graph: Graph) -> None:
         self.graph = graph
-    
+
     def find_path(self) -> list[Zone]:
         try:
             queue = deque([[self.graph.start]])
@@ -15,18 +16,19 @@ class Pathfinder:
                 path = queue.popleft()
 
                 current = path[-1]
-    
+
                 if current == self.graph.end:
                     return path
-                
+
                 for neighbor in self.graph.get_neighbors(current):
                     if neighbor.name not in visited and neighbor.zone_type != "blocked":
-                       visited.add(neighbor.name)
-                       queue.append(path + [neighbor])
+                        visited.add(neighbor.name)
+                        queue.append(path + [neighbor])
             return []
         except Exception as e:
             print(f"Found an error: {e}")
-    def find_all_paths(self) ->list[list]:
+
+    def find_all_paths(self) -> list[list]:
         all_paths: list[list] = []
 
         queue = deque([[self.graph.start]])
@@ -34,7 +36,7 @@ class Pathfinder:
             while queue:
                 path = queue.popleft()
                 current = path[-1]
-    
+
                 if current == self.graph.end:
                     all_paths.append(path)
                 for neighbor in self.graph.get_neighbors(current):
