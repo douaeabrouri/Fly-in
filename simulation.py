@@ -60,6 +60,7 @@ class Simulation:
 
             if edge is None:
                 continue
+
             if link_usage.get(edge, 0) >= edge.max_link_capacity:
                 continue
             link_usage[edge] = link_usage.get(edge, 0) + 1
@@ -69,6 +70,8 @@ class Simulation:
                     next_zone.inside_zone + next_zone.incoming_drones
                 ) >= next_zone.max_drones:
                     continue
+                
+            link_usage[edge] = link_usage.get(edge, 0) + 1
 
             if next_zone.zone_type == "restricted":
                 drone.destination_zone = next_zone
@@ -91,7 +94,8 @@ class Simulation:
 
     def run(self) -> list:
         self.data = []
-        while not self.all_delivered():
+        max_turns = 1000
+        while True:
             frame = {}
             for d in self.drones:
                 if d.doing_turns == 2:
@@ -100,13 +104,19 @@ class Simulation:
                     frame[d.drone_id] = f"waiting_{d.destination_zone.name}"
                 else:
                     frame[d.drone_id] = d.current_zone.name
+            if self.data and frame == self.data[-1]:
+                print(f"\n⚠️ Deadlock detected at turn {self.turn}! Drones are gridlocked.")
+                print("Breaking loop now so you can see the bottleneck in the visualizer window.")
+                break
             self.data.append(frame)
             self.turn += 1
-            # if self.all_delivered():
-            #     break
+            if self.all_delivered():
+                break
+            if self.turn >= max_turns:
+                print(f"\n⚠️ Reached safety cap of {max_turns} turns. Breaking loop to visualize.")
+                break
             self.step_to_goal()
         return self.data
-
 
 def main():
     filepath = "map/my_maps.txt"
@@ -122,6 +132,5 @@ def main():
     except KeyboardInterrupt:
         print("PROCESS INTERRUPT!")
         sys.exit()
-
 
 main()

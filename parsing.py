@@ -122,6 +122,7 @@ class Parser:
                             graph.add_connection(connection)
                         except Exception as e:
                             print(f"error: {e}")
+
         except Exception as e:
             print(f"Error on line {line_num}: {e}")
             sys.exit(1)

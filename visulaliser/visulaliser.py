@@ -4,7 +4,7 @@ from simulation import Simulation
 from parsing import Parser
 
 WINDOW_W, WINDOW_H = 1300, 800
-MARGIN = 100
+MARGIN = 80
 STEP = 0.003
 PAUSE_MS = 1000
 
@@ -36,7 +36,7 @@ class visualisation:
         self.blocked_zone = pygame.image.load("visulaliser/alien/blocked_zone.png")
         self.blocked_zone = pygame.transform.scale(self.blocked_zone, (70, 70))
         self.station_zone = pygame.image.load("visulaliser/alien/space_station.png")
-        self.station_zone = pygame.transform.scale(self.station_zone, (70, 70))
+        self.station_zone = pygame.transform.scale(self.station_zone, (55, 55))
 
         aliens = [
             {"start": (1300, 40), "end": (-60, 40)},
@@ -45,7 +45,7 @@ class visualisation:
         ]
 
         self.turn_index: int = 0
-        self.positions = self.zones_positions()
+        self.positions = self.zones_positions(WINDOW_W, WINDOW_H, MARGIN)
         self.current_alien = 0
         self.progress = 0.0
         self.pause = False
@@ -72,7 +72,7 @@ class visualisation:
                     if pygame.time.get_ticks() - self.pause_start > 1000:
                         self.pause = False
                 else:
-                    self.progress += 0.03
+                    self.progress += 0.01
                     if self.progress >= 0.99:
                         self.pause = True
                         self.pause_start = pygame.time.get_ticks()
@@ -91,9 +91,7 @@ class visualisation:
 
             x = start[0] + (end[0] - start[0]) * self.progress_for_animation
             y = start[1] + (end[1] - start[1]) * self.progress_for_animation
-
             self.screen.blit(self.alien_surface, (x, y))
-
             pygame.display.update()
             clock.tick(60)
 
@@ -107,29 +105,37 @@ class visualisation:
         y_off = row * spacing
         return x_off, y_off
 
-    def zones_positions(self) -> dict:
+    def zones_positions(self, current_window_w, current_window_h, margin=50) -> dict:
         zones = list(self.graph.zones.values())
+        if not zones:
+            return {}
 
         xs = [z.x for z in zones]
         ys = [z.y for z in zones]
 
         min_x, max_x = min(xs), max(xs)
         min_y, max_y = min(ys), max(ys)
+        
+
         span_x = max(max_x - min_x, 1)
         span_y = max(max_y - min_y, 1)
+        usable_w = current_window_w - (2 * margin)
+        usable_h = current_window_h - (2 * margin)
+        scale = min(usable_w / span_x, usable_h / span_y)
 
         positions = {}
         for z in zones:
-            px = MARGIN + ((z.x - min_x) / span_x) * (WINDOW_W - 2 * MARGIN)
-            py = MARGIN + ((z.y - min_y) / span_y) * (WINDOW_H * 0.4)
+            px = (z.x - min_x) * scale
+            py = (z.y - min_y) * scale
             positions[z.name] = (px, py)
-        graph_center_x = sum(p[0] for p in positions.values()) / len(positions)
-        graph_center_y = sum(p[1] for p in positions.values()) / len(positions)
 
-        offset_x = WINDOW_W / 2 - graph_center_x
-        offset_y = WINDOW_H / 2 - graph_center_y
-        for name, (x, y) in positions.items():
-            positions[name] = (x + offset_x, y + offset_y)
+        graph_width = span_x * scale
+        graph_height = span_y * scale
+        offset_x = (current_window_w - graph_width) / 2
+        offset_y = (current_window_h - graph_height) / 2
+        for name, (px, py) in positions.items():
+            positions[name] = (px + offset_x, py + offset_y)
+
         return positions
 
     def _zone_type_of(self, name):
@@ -154,18 +160,54 @@ class visualisation:
             )
 
     def _draw_zones(self):
-        for name, pos in self.positions.items():
-            zone_type = self._zone_type_of(name)
-            if zone_type == "blocked":
-                self.screen.blit(self.blocked_zone, (pos[0] - 35, pos[1] - 35))
-            else:
-                color = ZONE_COLOR.get(zone_type, ZONE_COLOR["normal"])
-                pygame.draw.circle(self.screen, color, pos, 18)
-            my_font = pygame.font.Font(None, 24)
-            label_surface = my_font.render(name, True, (255, 255, 255))
-            self.screen.blit(
-                label_surface, (pos[0] - label_surface.get_width() / 2, pos[1] + 40)
-            )
+            radius = 32  
+            my_font = pygame.font.Font(None, 19) 
+            line_spacing = 2
+
+            for name, pos in self.positions.items():
+                zone_type = self._zone_type_of(name)
+                text_color = (255, 255, 255) if zone_type == "blocked" else (0, 0, 0)
+                part1, part2 = name, ""
+                
+                for delim in ['_', ' ', '-']:
+                    if delim in name:
+                        parts = name.split(delim)
+                        mid = max(1, len(parts) // 2)
+                        part1 = delim.join(parts[:mid])
+                        part2 = delim.join(parts[mid:])
+                        break
+                else:
+                    if len(name) > 7:
+                        mid = len(name) // 2
+                        part1 = name[:mid] + "-"
+                        part2 = name[mid:]
+                surface1 = my_font.render(part1, True, text_color)
+                w1, h1 = surface1.get_width(), surface1.get_height()
+                
+                if part2:
+                    surface2 = my_font.render(part2, True, text_color)
+                    w2, h2 = surface2.get_width(), surface2.get_height()
+                    total_h = h1 + h2 + line_spacing
+                else:
+                    surface2 = None
+                    w2, h2 = 0, 0
+                    total_h = h1
+
+                if zone_type == "blocked":
+                    scaled_blocked = pygame.transform.scale(self.blocked_zone, (radius * 2, radius * 2))
+                    self.screen.blit(scaled_blocked, (pos[0] - radius, pos[1] - radius))
+                else:
+                    color = ZONE_COLOR.get(zone_type, ZONE_COLOR["normal"])
+                    pygame.draw.circle(self.screen, color, (int(pos[0]), int(pos[1])), radius)
+
+                start_y = pos[1] - total_h / 2
+            
+                text1_x = pos[0] - w1 / 2
+                self.screen.blit(surface1, (text1_x, start_y))
+            
+                if surface2:
+                    text2_x = pos[0] - w2 / 2
+                    self.screen.blit(surface2, (text2_x, start_y + h1 + line_spacing))
 
     def create_all_stations(self):
         for connection in self.graph.connections:
@@ -194,20 +236,39 @@ class visualisation:
     def _draw_drones(self):
         if self.turn_index >= len(self.history) - 1:
             return
+            
         frame_from = self.history[self.turn_index]
         frame_to = self.history[self.turn_index + 1]
+        path_groups = {}
+        drone_path_keys = {}
+        
         for drone_id, to_zone in frame_to.items():
-            self.positions = self.zones_positions()
             from_zone = frame_from.get(drone_id)
             if from_zone is None:
                 continue
+            
+            path_key = (from_zone, to_zone)
+            if path_key not in path_groups:
+                path_groups[path_key] = []
+            path_groups[path_key].append(drone_id)
+            drone_path_keys[drone_id] = path_key
+        for drone_id, to_zone in frame_to.items():
+            from_zone = frame_from.get(drone_id)
+            if from_zone is None:
+                continue
+                
+            path_key = drone_path_keys.get(drone_id)
+            if not path_key:
+                continue
+                
+            shared_drones = path_groups[path_key]
+            local_index = shared_drones.index(drone_id)
+            total_on_path = len(shared_drones)
 
-            if (
-                isinstance(from_zone, str)
-                and not from_zone.startswith(("waiting_", "moving_waiting_"))
-                and isinstance(to_zone, str)
-                and to_zone.startswith("moving_waiting_")
-            ):
+            if (from_zone in self.positions 
+                and isinstance(to_zone, str) 
+                and to_zone.startswith("moving_waiting_")):
+                
                 real_zone = to_zone.replace("moving_waiting_", "")
                 self.transit_origin[drone_id] = from_zone
 
@@ -215,53 +276,86 @@ class visualisation:
                     continue
 
                 station_x, station_y = self._get_station_pos(from_zone, real_zone)
-                first_pos = self.positions[from_zone]
-                x = first_pos[0] + (station_x - first_pos[0]) * self.progress
+                start_pos = self.positions[from_zone] 
+                x = start_pos[0] + (station_x - start_pos[0]) * self.progress
+                y = start_pos[1] + (station_y - start_pos[1]) * self.progress
+                dx = station_x - start_pos[0]
+                dy = station_y - start_pos[1]
 
-                y = first_pos[1] + (station_y - first_pos[1]) * self.progress
-                x_off, y_off = self._grid_offset(drone_id)
-                self.screen.blit(self.alien_drone, (x - 25 + x_off, y - 25 + y_off))
+                dist = (dx**2 + dy**2)**0.5
+                if dist > 0:
+                    nx, ny = -dy / dist, dx / dist
+                    lane_offset = (local_index - (total_on_path - 1) / 2) * 14
+                    x += nx * lane_offset
+                    y += ny * lane_offset
+
+                self.screen.blit(self.alien_drone, (x - 25, y - 25))
                 continue
-            if (
-                isinstance(from_zone, str)
-                and from_zone.startswith("moving_waiting_")
-                and isinstance(to_zone, str)
+
+            if (isinstance(from_zone, str) 
+                and from_zone.startswith("moving_waiting_") 
+                and isinstance(to_zone, str) 
                 and to_zone.startswith("waiting_")
-            ):
+                and to_zone not in self.positions):
+                
                 real_zone = to_zone.replace("waiting_", "")
                 origin_zone = self.transit_origin.get(drone_id)
                 if origin_zone is None:
                     continue
+                    
                 x, y = self._get_station_pos(origin_zone, real_zone)
-                x_off, y_off = self._grid_offset(drone_id)
+                
+                row = local_index // 3
+                col = local_index % 3
+                x_off = (col - 1) * 12
+                y_off = (row - 0.5) * 12
+                
                 self.screen.blit(self.alien_drone, (x - 25 + x_off, y - 25 + y_off))
                 continue
-            if isinstance(from_zone, str) and from_zone.startswith("waiting_"):
+
+            if (isinstance(from_zone, str) 
+                and from_zone.startswith("waiting_") 
+                and from_zone not in self.positions):
+                
                 origin_zone = self.transit_origin.get(drone_id)
                 if origin_zone is None or to_zone not in self.positions:
                     continue
+                    
                 station_x, station_y = self._get_station_pos(origin_zone, to_zone)
-                end_x, end_y = self.positions[to_zone]
-                x = station_x + (end_x - station_x) * self.progress
-                y = station_y + (end_y - station_y) * self.progress
-                x_off, y_off = self._grid_offset(drone_id)
-                self.screen.blit(self.alien_drone, (x - 25 + x_off, y - 25 + y_off))
+                end_pos = self.positions[to_zone]
+                
+                x = station_x + (end_pos[0] - station_x) * self.progress
+                y = station_y + (end_pos[1] - station_y) * self.progress
+                dx = end_pos[0] - station_x
+                dy = end_pos[1] - station_y
+                dist = (dx**2 + dy**2)**0.5
+                if dist > 0:
+                    nx, ny = -dy / dist, dx / dist
+                    lane_offset = (local_index - (total_on_path - 1) / 2) * 14
+                    x += nx * lane_offset
+                    y += ny * lane_offset
+
+                self.screen.blit(self.alien_drone, (x - 25, y - 25))
                 continue
 
-            if from_zone not in self.positions:
-                continue
-            if to_zone not in self.positions:
+            if from_zone not in self.positions or to_zone not in self.positions:
                 continue
 
-            start = self.positions[from_zone]
-            end = self.positions[to_zone]
-            x = start[0] + (end[0] - start[0]) * self.progress
-            y = start[1] + (end[1] - start[1]) * self.progress
-            x_off, y_off = self._grid_offset(drone_id)
-            self.screen.blit(self.alien_drone, (x - 25 + x_off, y - 25 + y_off))
-            continue
+            start_pos = self.positions[from_zone]
+            end_pos = self.positions[to_zone]
+            
+            x = start_pos[0] + (end_pos[0] - start_pos[0]) * self.progress
+            y = start_pos[1] + (end_pos[1] - start_pos[1]) * self.progress
+            dx = end_pos[0] - start_pos[0]
+            dy = end_pos[1] - start_pos[1]
+            dist = (dx**2 + dy**2)**0.5
+            if dist > 0:
+                nx, ny = -dy / dist, dx / dist
+                lane_offset = (local_index - (total_on_path - 1) / 2) * 14
+                x += nx * lane_offset
+                y += ny * lane_offset
 
-
+            self.screen.blit(self.alien_drone, (x - 25, y - 25))
 def main():
     filepath = "map/my_maps.txt"
     parser = Parser()
